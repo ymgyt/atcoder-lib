@@ -90,7 +90,7 @@ mod cio {
             <T as FromStr>::Err: Debug,
         {
             if self.buf.is_empty() {
-                self.fill_buf();
+                self.fill_buf()?;
             }
 
             let mut from = None;
