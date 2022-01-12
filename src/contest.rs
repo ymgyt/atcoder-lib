@@ -128,6 +128,11 @@ mod cio {
             if self.reader.read_until(b'\n', &mut self.buf)? == 0 {
                 Err(Error::Eof)
             } else {
+                // ensure buf end in a newline
+                match self.buf.last() {
+                    Some(b'\n') => (),
+                    Some(_) | None => self.buf.push(b'\n'),
+                }
                 Ok(())
             }
         }
@@ -164,6 +169,15 @@ mod cio {
 
             assert_eq!(scanner.next::<i64>(), 10);
             assert!(matches!(scanner.try_next::<i64>(), Err(Error::Eof)));
+        }
+
+        #[test]
+        fn no_newline() {
+            let input = "10 20";
+            let mut scanner = Scanner::from(input);
+
+            assert_eq!(scanner.next::<u32>(), 10);
+            assert_eq!(scanner.next::<u32>(), 20);
         }
     }
 }
