@@ -73,18 +73,18 @@ pub mod cio {
             }
         }
 
-        pub fn next<T>(&mut self) -> T
+        pub fn scan<T>(&mut self) -> T
         where
             T: FromStr,
             <T as FromStr>::Err: Debug,
         {
-            match self.try_next() {
+            match self.try_scan() {
                 Ok(v) => v,
                 Err(err) => panic!("{}", err),
             }
         }
 
-        pub fn try_next<T>(&mut self) -> Result<T>
+        pub fn try_scan<T>(&mut self) -> Result<T>
         where
             T: FromStr,
             <T as FromStr>::Err: Debug,
@@ -140,7 +140,7 @@ pub mod cio {
             let mut vec = Vec::with_capacity(size);
 
             for _ in 0..size {
-                vec.push(self.try_next()?);
+                vec.push(self.try_scan()?);
             }
 
             Ok(vec)
@@ -177,14 +177,14 @@ pub mod cio {
         }
 
         #[test]
-        fn read() {
+        fn scan() {
             let input = "1 -20\nABC 30.1\n";
             let mut scanner = Scanner::from(input);
 
-            assert_eq!(scanner.next::<i64>(), 1);
-            assert_eq!(scanner.next::<i64>(), -20);
-            assert_eq!(scanner.next::<String>(), String::from("ABC"));
-            assert_eq!(scanner.next::<f64>(), 30.1);
+            assert_eq!(scanner.scan::<i64>(), 1);
+            assert_eq!(scanner.scan::<i64>(), -20);
+            assert_eq!(scanner.scan::<String>(), String::from("ABC"));
+            assert_eq!(scanner.scan::<f64>(), 30.1);
         }
 
         #[test]
@@ -192,8 +192,8 @@ pub mod cio {
             let input = "10\n";
             let mut scanner = Scanner::from(input);
 
-            assert_eq!(scanner.next::<i64>(), 10);
-            assert!(matches!(scanner.try_next::<i64>(), Err(Error::Eof)));
+            assert_eq!(scanner.scan::<i64>(), 10);
+            assert!(matches!(scanner.try_scan::<i64>(), Err(Error::Eof)));
         }
 
         #[test]
@@ -201,8 +201,8 @@ pub mod cio {
             let input = "10 20";
             let mut scanner = Scanner::from(input);
 
-            assert_eq!(scanner.next::<u32>(), 10);
-            assert_eq!(scanner.next::<u32>(), 20);
+            assert_eq!(scanner.scan::<u32>(), 10);
+            assert_eq!(scanner.scan::<u32>(), 20);
         }
 
         #[test]
