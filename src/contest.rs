@@ -121,6 +121,31 @@ mod cio {
             part.parse::<T>().map_err(Error::parse_error)
         }
 
+        pub fn collect<T>(&mut self, size: usize) -> Vec<T>
+            where
+                T: FromStr,
+                <T as FromStr>::Err: Debug,
+        {
+           match self.try_collect(size) {
+               Ok(vec) => vec,
+               Err(err) => panic!("{}", err)
+           }
+        }
+
+        pub fn try_collect<T>(&mut self, size: usize) -> Result<Vec<T>, Error>
+            where
+                T: FromStr,
+            <T as FromStr>::Err: Debug,
+        {
+            let mut vec = Vec::with_capacity(size);
+
+            for i in 0..size {
+                vec.push(self.try_next()?);
+            }
+
+            Ok(vec)
+        }
+
         /// read a line from underlying reader and store it in the buffer.
         fn fill_buf(&mut self) -> Result<()> {
             self.buf.clear();
@@ -179,5 +204,20 @@ mod cio {
             assert_eq!(scanner.next::<u32>(), 10);
             assert_eq!(scanner.next::<u32>(), 20);
         }
+
+        #[test]
+        fn collect() {
+            let input = "A B C";
+            let mut scanner = Scanner::from(input);
+
+            assert_eq!(scanner.collect::<char>(3), vec!['A', 'B', 'C']);
+
+            let input = "100 200 300 A B C";
+            let mut scanner = Scanner::from(input);
+
+            assert_eq!(scanner.collect::<i64>(3), vec![100, 200,300]);
+            assert_eq!(scanner.collect::<String>(3), vec![String::from("A"), String::from("B"),String::from("C")]);
+        }
     }
 }
+
