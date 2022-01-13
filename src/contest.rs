@@ -122,19 +122,19 @@ mod cio {
         }
 
         pub fn collect<T>(&mut self, size: usize) -> Vec<T>
-            where
-                T: FromStr,
-                <T as FromStr>::Err: Debug,
+        where
+            T: FromStr,
+            <T as FromStr>::Err: Debug,
         {
-           match self.try_collect(size) {
-               Ok(vec) => vec,
-               Err(err) => panic!("{}", err)
-           }
+            match self.try_collect(size) {
+                Ok(vec) => vec,
+                Err(err) => panic!("{}", err),
+            }
         }
 
         pub fn try_collect<T>(&mut self, size: usize) -> Result<Vec<T>, Error>
-            where
-                T: FromStr,
+        where
+            T: FromStr,
             <T as FromStr>::Err: Debug,
         {
             let mut vec = Vec::with_capacity(size);
@@ -215,9 +215,11 @@ mod cio {
             let input = "100 200 300 A B C";
             let mut scanner = Scanner::from(input);
 
-            assert_eq!(scanner.collect::<i64>(3), vec![100, 200,300]);
-            assert_eq!(scanner.collect::<String>(3), vec![String::from("A"), String::from("B"),String::from("C")]);
+            assert_eq!(scanner.collect::<i64>(3), vec![100, 200, 300]);
+            assert_eq!(
+                scanner.collect::<String>(3),
+                vec![String::from("A"), String::from("B"), String::from("C")]
+            );
         }
     }
 }
-
