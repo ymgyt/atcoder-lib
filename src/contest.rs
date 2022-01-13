@@ -146,6 +146,60 @@ pub mod cio {
             Ok(vec)
         }
 
+        pub fn tuple_2<T1, T2>(&mut self) -> (T1, T2)
+        where
+            T1: FromStr,
+            T2: FromStr,
+            <T1 as FromStr>::Err: Debug,
+            <T2 as FromStr>::Err: Debug,
+        {
+            match self.try_tuple_2::<T1, T2>() {
+                Ok(v) => v,
+                Err(err) => panic!("{}", err),
+            }
+        }
+
+        pub fn try_tuple_2<T1, T2>(&mut self) -> Result<(T1, T2), Error>
+        where
+            T1: FromStr,
+            T2: FromStr,
+            <T1 as FromStr>::Err: Debug,
+            <T2 as FromStr>::Err: Debug,
+        {
+            Ok((self.try_scan::<T1>()?, self.try_scan::<T2>()?))
+        }
+
+        pub fn tuple_3<T1, T2, T3>(&mut self) -> (T1, T2, T3)
+        where
+            T1: FromStr,
+            T2: FromStr,
+            T3: FromStr,
+            <T1 as FromStr>::Err: Debug,
+            <T2 as FromStr>::Err: Debug,
+            <T3 as FromStr>::Err: Debug,
+        {
+            match self.try_tuple_3::<T1, T2, T3>() {
+                Ok(v) => v,
+                Err(err) => panic!("{}", err),
+            }
+        }
+
+        pub fn try_tuple_3<T1, T2, T3>(&mut self) -> Result<(T1, T2, T3), Error>
+        where
+            T1: FromStr,
+            T2: FromStr,
+            T3: FromStr,
+            <T1 as FromStr>::Err: Debug,
+            <T2 as FromStr>::Err: Debug,
+            <T3 as FromStr>::Err: Debug,
+        {
+            Ok((
+                self.try_scan::<T1>()?,
+                self.try_scan::<T2>()?,
+                self.try_scan::<T3>()?,
+            ))
+        }
+
         /// read a line from underlying reader and store it in the buffer.
         fn fill_buf(&mut self) -> Result<()> {
             self.buf.clear();
@@ -220,6 +274,22 @@ pub mod cio {
                 scanner.collect::<String>(3),
                 vec![String::from("A"), String::from("B"), String::from("C")]
             );
+        }
+
+        #[test]
+        fn tuple_2() {
+            let input = "A 10";
+            let mut scanner = Scanner::from(input);
+
+            assert_eq!(scanner.tuple_2::<char, i8>(), ('A', 10));
+        }
+
+        #[test]
+        fn tuple_3() {
+            let input = "A 10 -2000";
+            let mut scanner = Scanner::from(input);
+
+            assert_eq!(scanner.tuple_3::<char, i8, i64>(), ('A', 10, -2000));
         }
     }
 }
