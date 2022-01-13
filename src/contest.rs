@@ -139,7 +139,7 @@ mod cio {
         {
             let mut vec = Vec::with_capacity(size);
 
-            for i in 0..size {
+            for _ in 0..size {
                 vec.push(self.try_next()?);
             }
 
