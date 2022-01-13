@@ -1,4 +1,4 @@
-mod cio {
+pub mod cio {
     use std::fmt::{self, Debug};
     use std::io::{BufRead, Cursor, Stdin, StdinLock};
     use std::str::FromStr;
