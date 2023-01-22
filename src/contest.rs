@@ -299,5 +299,5 @@ pub mod cio {
             let mut $scanner = cio::Scanner::from(&_stdin);
         };
     }
-    pub(crate) setup;
+    pub(crate) use setup;
 }
