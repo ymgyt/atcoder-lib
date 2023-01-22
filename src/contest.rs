@@ -296,7 +296,8 @@ pub mod cio {
     macro_rules! setup {
         ( $scanner:ident ) => {
             let _stdin = std::io::stdin();
-            let mut $scanner = cio::Scanner::from(&stdin);
+            let mut $scanner = cio::Scanner::from(&_stdin);
         };
     }
+    pub(crate) setup;
 }
