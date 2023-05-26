@@ -292,4 +292,12 @@ pub mod cio {
             assert_eq!(scanner.tuple_3::<char, i8, i64>(), ('A', 10, -2000));
         }
     }
+
+    macro_rules! setup {
+        ( $scanner:ident ) => {
+            let _stdin = std::io::stdin();
+            let mut $scanner = cio::Scanner::from(&_stdin);
+        };
+    }
+    pub(crate) use setup;
 }
