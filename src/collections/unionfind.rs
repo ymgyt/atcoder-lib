@@ -1,5 +1,5 @@
 pub struct UnionFind {
-    parent: Vec<Option<usize>>,
+    parent: Vec<usize>,
     size: Vec<usize>,
 }
 
@@ -13,7 +13,7 @@ impl UnionFind {
     /// Create new `UnionFind` of `n` disjoint sets.
     pub fn new(n: usize) -> Self {
         Self {
-            parent: vec![None; n],
+            parent: (0..n).collect(),
             size: vec![1; n],
         }
     }
@@ -24,7 +24,7 @@ impl UnionFind {
         }
 
         let (large, small) = {
-            let (x, y) = (self.root_with_optimize(x), self.root_with_optimize(y));
+            let (x, y) = (self.root(x), self.root(y));
             if x == y {
                 return UnionResult::AlreadyUnified;
             }
@@ -36,40 +36,26 @@ impl UnionFind {
             }
         };
 
-        self.parent[small] = Some(large);
+        self.parent[small] = large;
         self.size[large] += self.size[small];
         UnionResult::Unified
     }
 
     /// Returns `true` if the given elements belong to the same set
     /// and returns `false` otherwise.
-    pub fn equiv(&self, x: usize, y: usize) -> bool {
+    pub fn equiv(&mut self, x: usize, y: usize) -> bool {
         self.root(x) == self.root(y)
     }
 
-    /// Return the representative for `x`.
-    pub fn root(&self, x: usize) -> usize {
+    fn root(&mut self, x: usize) -> usize {
         let mut curr = x;
         loop {
-            match self.parent[curr] {
-                Some(parent) => {
-                    curr = parent;
-                }
-                None => return curr,
+            let parent = self.parent[curr];
+            if curr == parent {
+                self.parent[x] = curr;
+                return curr;
             }
-        }
-    }
-
-    fn root_with_optimize(&mut self, x: usize) -> usize {
-        let mut curr = x;
-        loop {
-            match self.parent[curr] {
-                Some(parent) => {
-                    self.parent[x] = Some(parent);
-                    curr = parent;
-                }
-                None => return curr,
-            }
+            curr = parent;
         }
     }
 
