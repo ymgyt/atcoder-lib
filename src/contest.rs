@@ -61,6 +61,68 @@ pub mod cio {
         }
     }
 
+    pub trait FromScanner<R>
+    where
+        R: BufRead,
+    {
+        fn from_scanner(s: &mut Scanner<R>) -> Self
+        where
+            Self: Sized,
+        {
+            Self::try_from_scanner(s).unwrap()
+        }
+
+        fn try_from_scanner(s: &mut Scanner<R>) -> Result<Self>
+        where
+            Self: Sized;
+    }
+
+    macro_rules! impl_scanner {
+        ($t:ty) => {
+            impl<R> FromScanner<R> for $t
+            where
+                R: BufRead,
+            {
+                fn try_from_scanner(s: &mut Scanner<R>) -> Result<Self>
+                where
+                    Self: Sized,
+                {
+                    s.try_parse()
+                }
+            }
+        };
+
+        ($($t:ident),+) => {
+            impl<R,$($t),+ > FromScanner<R> for ($($t),+)
+            where
+                R: BufRead,
+                $($t: FromScanner<R>),+
+            {
+                fn try_from_scanner(s: &mut Scanner<R>) -> Result<Self>
+                where
+                    Self: Sized,
+                {
+                    Ok((
+                      $($t::try_from_scanner(s)?),+
+                    ))
+                }
+            }
+        }
+    }
+    impl_scanner!(usize);
+    impl_scanner!(isize);
+    impl_scanner!(u8);
+    impl_scanner!(u32);
+    impl_scanner!(u64);
+    impl_scanner!(i8);
+    impl_scanner!(i32);
+    impl_scanner!(i64);
+    impl_scanner!(String);
+    impl_scanner!(char);
+    impl_scanner!(T1, T2);
+    impl_scanner!(T1, T2, T3);
+    impl_scanner!(T1, T2, T3, T4);
+
     impl<R> Scanner<R>
     where
         R: BufRead,
@@ -75,16 +137,34 @@ pub mod cio {
 
         pub fn scan<T>(&mut self) -> T
         where
+            T: FromScanner<R>,
+        {
+            T::from_scanner(self)
+        }
+
+        pub fn scan_n<T>(&mut self, n: usize) -> Vec<T>
+        where
+            T: FromScanner<R>,
+        {
+            let mut v = Vec::with_capacity(n);
+            for _ in 0..n {
+                v.push(T::from_scanner(self));
+            }
+            v
+        }
+
+        pub fn parse<T>(&mut self) -> T
+        where
             T: FromStr,
             <T as FromStr>::Err: Debug,
         {
-            match self.try_scan() {
+            match self.try_parse() {
                 Ok(v) => v,
                 Err(err) => panic!("{}", err),
             }
         }
 
-        pub fn try_scan<T>(&mut self) -> Result<T>
+        pub fn try_parse<T>(&mut self) -> Result<T>
         where
             T: FromStr,
             <T as FromStr>::Err: Debug,
@@ -140,7 +220,7 @@ pub mod cio {
             let mut vec = Vec::with_capacity(size);
 
             for _ in 0..size {
-                vec.push(self.try_scan()?);
+                vec.push(self.try_parse()?);
             }
 
             Ok(vec)
@@ -166,7 +246,7 @@ pub mod cio {
             <T1 as FromStr>::Err: Debug,
             <T2 as FromStr>::Err: Debug,
         {
-            Ok((self.try_scan::<T1>()?, self.try_scan::<T2>()?))
+            Ok((self.try_parse::<T1>()?, self.try_parse::<T2>()?))
         }
 
         pub fn tuple_3<T1, T2, T3>(&mut self) -> (T1, T2, T3)
@@ -194,9 +274,9 @@ pub mod cio {
             <T3 as FromStr>::Err: Debug,
         {
             Ok((
-                self.try_scan::<T1>()?,
-                self.try_scan::<T2>()?,
-                self.try_scan::<T3>()?,
+                self.try_parse::<T1>()?,
+                self.try_parse::<T2>()?,
+                self.try_parse::<T3>()?,
             ))
         }
 
@@ -217,87 +297,102 @@ pub mod cio {
         }
     }
 
-    #[cfg(test)]
-    mod test {
-        use super::*;
-
-        #[test]
-        fn new() {
-            let stdin = std::io::stdin();
-            let _ = Scanner::from(&stdin);
-
-            let input = "1 2 3";
-            let _ = Scanner::from(input);
-        }
-
-        #[test]
-        fn scan() {
-            let input = "1 -20\nABC 30.1\n";
-            let mut scanner = Scanner::from(input);
-
-            assert_eq!(scanner.scan::<i64>(), 1);
-            assert_eq!(scanner.scan::<i64>(), -20);
-            assert_eq!(scanner.scan::<String>(), String::from("ABC"));
-            assert_eq!(scanner.scan::<f64>(), 30.1);
-        }
-
-        #[test]
-        fn eof() {
-            let input = "10\n";
-            let mut scanner = Scanner::from(input);
-
-            assert_eq!(scanner.scan::<i64>(), 10);
-            assert!(matches!(scanner.try_scan::<i64>(), Err(Error::Eof)));
-        }
-
-        #[test]
-        fn no_newline() {
-            let input = "10 20";
-            let mut scanner = Scanner::from(input);
-
-            assert_eq!(scanner.scan::<u32>(), 10);
-            assert_eq!(scanner.scan::<u32>(), 20);
-        }
-
-        #[test]
-        fn collect() {
-            let input = "A B C";
-            let mut scanner = Scanner::from(input);
-
-            assert_eq!(scanner.collect::<char>(3), vec!['A', 'B', 'C']);
-
-            let input = "100 200 300 A B C";
-            let mut scanner = Scanner::from(input);
-
-            assert_eq!(scanner.collect::<i64>(3), vec![100, 200, 300]);
-            assert_eq!(
-                scanner.collect::<String>(3),
-                vec![String::from("A"), String::from("B"), String::from("C")]
-            );
-        }
-
-        #[test]
-        fn tuple_2() {
-            let input = "A 10";
-            let mut scanner = Scanner::from(input);
-
-            assert_eq!(scanner.tuple_2::<char, i8>(), ('A', 10));
-        }
-
-        #[test]
-        fn tuple_3() {
-            let input = "A 10 -2000";
-            let mut scanner = Scanner::from(input);
-
-            assert_eq!(scanner.tuple_3::<char, i8, i64>(), ('A', 10, -2000));
-        }
-    }
-
+    #[allow(unused_macros)]
     macro_rules! setup {
         ( $scanner:ident ) => {
             let _stdin = std::io::stdin();
             let mut $scanner = cio::Scanner::from(&_stdin);
         };
     }
+    #[allow(unused_imports)]
     pub(crate) use setup;
+}
+
+#[cfg(test)]
+mod test {
+    use super::cio::*;
+
+    #[test]
+    fn new() {
+        let stdin = std::io::stdin();
+        let _ = Scanner::from(&stdin);
+
+        let input = "1 2 3";
+        let _ = Scanner::from(input);
+    }
+
+    #[test]
+    fn scan() {
+        let input = "1 -20\nABC 30.1\n";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.parse::<i64>(), 1);
+        assert_eq!(scanner.parse::<i64>(), -20);
+        assert_eq!(scanner.parse::<String>(), String::from("ABC"));
+        assert_eq!(scanner.parse::<f64>(), 30.1);
+    }
+
+    #[test]
+    fn eof() {
+        let input = "10\n";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.parse::<i64>(), 10);
+        assert!(matches!(scanner.try_parse::<i64>(), Err(Error::Eof)));
+    }
+
+    #[test]
+    fn no_newline() {
+        let input = "10 20";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.parse::<u32>(), 10);
+        assert_eq!(scanner.parse::<u32>(), 20);
+    }
+
+    #[test]
+    fn collect() {
+        let input = "A B C";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.collect::<char>(3), vec!['A', 'B', 'C']);
+
+        let input = "100 200 300 A B C";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.collect::<i64>(3), vec![100, 200, 300]);
+        assert_eq!(
+            scanner.collect::<String>(3),
+            vec![String::from("A"), String::from("B"), String::from("C")]
+        );
+    }
+
+    #[test]
+    fn tuple_2() {
+        let input = "A 10";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.tuple_2::<char, i8>(), ('A', 10));
+    }
+
+    #[test]
+    fn tuple_3() {
+        let input = "A 10 -2000";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.tuple_3::<char, i8, i64>(), ('A', 10, -2000));
+    }
+
+    #[test]
+    fn should_scan() {
+        let input = "123 10 20 1 1 2 2 3 3";
+        let mut scanner = Scanner::from(input);
+
+        assert_eq!(scanner.scan::<usize>(), 123);
+        assert_eq!(scanner.scan::<(usize, usize)>(), (10, 20));
+        assert_eq!(
+            scanner.scan_n::<(usize, usize)>(3),
+            vec![(1, 1), (2, 2), (3, 3),]
+        )
+    }
 }
