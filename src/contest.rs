@@ -201,85 +201,6 @@ pub mod cio {
             part.parse::<T>().map_err(Error::parse_error)
         }
 
-        pub fn collect<T>(&mut self, size: usize) -> Vec<T>
-        where
-            T: FromStr,
-            <T as FromStr>::Err: Debug,
-        {
-            match self.try_collect(size) {
-                Ok(vec) => vec,
-                Err(err) => panic!("{}", err),
-            }
-        }
-
-        pub fn try_collect<T>(&mut self, size: usize) -> Result<Vec<T>, Error>
-        where
-            T: FromStr,
-            <T as FromStr>::Err: Debug,
-        {
-            let mut vec = Vec::with_capacity(size);
-
-            for _ in 0..size {
-                vec.push(self.try_parse()?);
-            }
-
-            Ok(vec)
-        }
-
-        pub fn tuple_2<T1, T2>(&mut self) -> (T1, T2)
-        where
-            T1: FromStr,
-            T2: FromStr,
-            <T1 as FromStr>::Err: Debug,
-            <T2 as FromStr>::Err: Debug,
-        {
-            match self.try_tuple_2::<T1, T2>() {
-                Ok(v) => v,
-                Err(err) => panic!("{}", err),
-            }
-        }
-
-        pub fn try_tuple_2<T1, T2>(&mut self) -> Result<(T1, T2), Error>
-        where
-            T1: FromStr,
-            T2: FromStr,
-            <T1 as FromStr>::Err: Debug,
-            <T2 as FromStr>::Err: Debug,
-        {
-            Ok((self.try_parse::<T1>()?, self.try_parse::<T2>()?))
-        }
-
-        pub fn tuple_3<T1, T2, T3>(&mut self) -> (T1, T2, T3)
-        where
-            T1: FromStr,
-            T2: FromStr,
-            T3: FromStr,
-            <T1 as FromStr>::Err: Debug,
-            <T2 as FromStr>::Err: Debug,
-            <T3 as FromStr>::Err: Debug,
-        {
-            match self.try_tuple_3::<T1, T2, T3>() {
-                Ok(v) => v,
-                Err(err) => panic!("{}", err),
-            }
-        }
-
-        pub fn try_tuple_3<T1, T2, T3>(&mut self) -> Result<(T1, T2, T3), Error>
-        where
-            T1: FromStr,
-            T2: FromStr,
-            T3: FromStr,
-            <T1 as FromStr>::Err: Debug,
-            <T2 as FromStr>::Err: Debug,
-            <T3 as FromStr>::Err: Debug,
-        {
-            Ok((
-                self.try_parse::<T1>()?,
-                self.try_parse::<T2>()?,
-                self.try_parse::<T3>()?,
-            ))
-        }
-
         /// read a line from underlying reader and store it in the buffer.
         fn fill_buf(&mut self) -> Result<()> {
             self.buf.clear();
@@ -348,39 +269,6 @@ mod test {
 
         assert_eq!(scanner.parse::<u32>(), 10);
         assert_eq!(scanner.parse::<u32>(), 20);
-    }
-
-    #[test]
-    fn collect() {
-        let input = "A B C";
-        let mut scanner = Scanner::from(input);
-
-        assert_eq!(scanner.collect::<char>(3), vec!['A', 'B', 'C']);
-
-        let input = "100 200 300 A B C";
-        let mut scanner = Scanner::from(input);
-
-        assert_eq!(scanner.collect::<i64>(3), vec![100, 200, 300]);
-        assert_eq!(
-            scanner.collect::<String>(3),
-            vec![String::from("A"), String::from("B"), String::from("C")]
-        );
-    }
-
-    #[test]
-    fn tuple_2() {
-        let input = "A 10";
-        let mut scanner = Scanner::from(input);
-
-        assert_eq!(scanner.tuple_2::<char, i8>(), ('A', 10));
-    }
-
-    #[test]
-    fn tuple_3() {
-        let input = "A 10 -2000";
-        let mut scanner = Scanner::from(input);
-
-        assert_eq!(scanner.tuple_3::<char, i8, i64>(), ('A', 10, -2000));
     }
 
     #[test]
