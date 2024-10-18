@@ -91,6 +91,69 @@ impl Dag {
     }
 }
 
+impl Dag {
+    //
+    pub fn djkstra(&self, from: usize, to: usize) -> Option<i64> {
+        //  https://doc.rust-lang.org/std/collections/binary_heap/index.html#examples
+        use std::{cmp::Ordering, collections::BinaryHeap};
+
+        #[derive(Copy, Clone, Eq, PartialEq)]
+        struct State {
+            position: usize,
+            cost: i64,
+        }
+
+        // BinaryHeap::pop require item to impl Ord
+        impl Ord for State {
+            fn cmp(&self, other: &Self) -> Ordering {
+                // I'm not sure why we should compare position
+                other
+                    .cost
+                    .cmp(&self.cost)
+                    .then_with(|| self.position.cmp(&other.position))
+            }
+        }
+
+        impl PartialOrd for State {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+
+        let mut dist = (0..self.size()).map(|_| INF).collect::<Vec<_>>();
+        dist[from] = 0;
+
+        let mut queue = BinaryHeap::new();
+        queue.push(State {
+            position: from,
+            cost: 0,
+        });
+
+        while let Some(State { position, cost }) = queue.pop() {
+            if position == to {
+                return Some(cost);
+            }
+
+            if cost > dist[position] {
+                continue;
+            }
+
+            for edge in &self.edges[position] {
+                let next = State {
+                    position: edge.to,
+                    cost: edge.cost + cost,
+                };
+                if next.cost < dist[next.position] {
+                    queue.push(next);
+                    dist[next.position] = next.cost;
+                }
+            }
+        }
+
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,5 +172,36 @@ mod tests {
 
         assert_eq!(sp[0][3], 5);
         assert_eq!(sp[0][1], 4);
+    }
+
+    #[test]
+    fn djkstra() {
+        // stole from std
+        //
+        //                  7
+        //          +-----------------+
+        //          |                 |
+        //          v   1        2    |  2
+        //          0 -----> 1 -----> 3 ---> 4
+        //          |        ^        ^      ^
+        //          |        | 1      |      |
+        //          |        |        | 3    | 1
+        //          +------> 2 -------+      |
+        //           10      |               |
+        //                   +---------------+
+
+        let mut g = Dag::new(5);
+
+        g.add_edge(0, 1, 1);
+        g.add_edge(0, 2, 10);
+        g.add_edge(1, 3, 2);
+        g.add_edge(2, 1, 1);
+        g.add_edge(2, 3, 3);
+        g.add_edge(2, 4, 1);
+        g.add_edge(3, 0, 7);
+        g.add_edge(3, 4, 2);
+
+        assert_eq!(g.djkstra(0, 4), Some(5));
+        assert_eq!(g.djkstra(0, 3), Some(3));
     }
 }
